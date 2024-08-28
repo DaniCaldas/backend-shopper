@@ -1,0 +1,16 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Table{
+  costumer_code String @id
+  image String
+  measure_datetime DateTime
+  measure_type String 
+}
