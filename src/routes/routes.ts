@@ -1,5 +1,5 @@
 import { Router, Response, Request } from "express";
-import { Upload, UploadFile } from "../controller/Controller";
+import { CreateCostumer, Foto, Upload } from "../controller/Controller";
 
 const router = Router();
 
@@ -7,7 +7,8 @@ router.get('/', (req: Request, res: Response) => {
     res.send('OK')
 });
 
-router.get('/w', () => UploadFile() )
-router.post('/upload', () => Upload)
+router.post("/teste", Foto)
+router.post('/upload', Upload);
+router.post("/costumer", CreateCostumer);
 
 export default router;
