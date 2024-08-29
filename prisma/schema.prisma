@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,9 +7,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Table{
-  costumer_code String @id
-  image String
-  measure_datetime DateTime
-  measure_type String 
+model Costumer {
+  costumer_code String     @id
+  measures      Measures[]
+}
+
+model Measures {
+  measure_uuid          String   @id
+  measure_datetime      DateTime
+  measure_type          String
+  has_confirmed         Boolean
+  image_url             String
+  costumer_id           String
+  costumer              Costumer @relation(fields: [costumer_id], references: [costumer_code])
 }

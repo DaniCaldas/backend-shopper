@@ -1,3 +1,0 @@
-DATABASE_URL="mysql://root@localhost:3306/mydb"
-GEMINI_API_KEY = "AIzaSyAneHIkZky1TyzQIy4kTPbfZSn0m_1AEPI"
-GEMINI_API_URL=https://api.gemini.google.com/v1/endpoint
