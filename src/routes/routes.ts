@@ -1,5 +1,5 @@
 import { Router, Response, Request } from "express";
-import { Confirm, CreateCostumer, Foto, List, Upload } from "../controller/Controller";
+import { Confirm, CreateCostumer, List, Upload } from "../controller/Controller";
 
 const router = Router();
 

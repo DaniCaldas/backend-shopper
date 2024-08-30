@@ -4,51 +4,14 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleAIFileManager } from "@google/generative-ai/server";
 import fs from 'fs';
 import path from "path";
-import { all } from "axios";
+import {v4 as uuid} from "uuid"
 
 const key = "AIzaSyAneHIkZky1TyzQIy4kTPbfZSn0m_1AEPI";
 const prisma = new PrismaClient();
 const genAI = new GoogleGenerativeAI(key);
 const fileManager = new GoogleAIFileManager(key);
 
-
-export const Foto = async (req: Request, res: Response) => {
-    try {
-        const { image } = req.body;
-
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash'})
-
-        const img = image.replace(/^data:image\/png;base64,/, "");
-
-        const file = path.join("src/img/", "imagem.png");
-
-        fs.writeFile(file, img, 'base64', (err) => {
-            if (err) {
-                console.error('Erro ao salvar a imagem:', err);
-                return;
-            }
-            setTimeout(() => {
-                fs.unlink(file, (err) => {
-                    if (err) {
-                        console.error('Erro ao deletar a imagem:', err);
-                        return;
-                    }
-                    console.log('Imagem temporária deletada.');
-                });
-            }, 30000); // Deleta após 30 segundos
-            
-        })
-
-        const result = await model.generateContent([
-            'return me only the result number of image',
-            { inlineData: {data: img, mimeType: 'image/png' }}
-        ])
-        return res.status(200).send(result.response.text());
-    } catch (error) {   
-        res.status(500).send(error);  
-    }
-}
-
+// Criação do Costumer
 export const CreateCostumer = async (req: Request, res: Response) => {
     const { costumer_code } = req.body;
 
@@ -61,6 +24,7 @@ export const CreateCostumer = async (req: Request, res: Response) => {
     })
 }
 
+// UPLOAD DE IMAGENS
 export const Upload  = async (req: Request, res: Response) => {
     const { image, costumer_code, measure_type} = req.body;
 
@@ -88,7 +52,7 @@ export const Upload  = async (req: Request, res: Response) => {
 
     const measures_in_mouth = all_measures.filter(measure => {
         const datemeasure = new Date(measure.measure_datetime);
-        return datemeasure.getMonth() + 1 === mouth;
+        return datemeasure.getMonth() + 1 === mouth && measure.costumer_id === costumer_code;
     })
 
     if(measures_in_mouth.length > 0){
@@ -105,7 +69,7 @@ export const Upload  = async (req: Request, res: Response) => {
 
         const img = image.replace(/^data:image\/png;base64,/, "");
 
-        const file = path.join("src/img/", "imagem.png");
+        const file = path.join("src/img/", `medida-${uuid()}.png`);
 
         fs.writeFile(file, img, 'base64', (err) => {
             if (err) {
@@ -134,7 +98,7 @@ export const Upload  = async (req: Request, res: Response) => {
         const newMeasure = await prisma.measures.create({
             data:{
                 measure_type: measure_type,
-                image_url: 'src/img/imagem.png',
+                image_url: `src/img/imagem${uuid()}.png`,
                 costumer_id: costumer_code
             }
         })
@@ -151,6 +115,8 @@ export const Upload  = async (req: Request, res: Response) => {
     }
 }
 
+
+// Confirmação de valor
 export const Confirm = async (req: Request, res: Response) => {
     const { measure_uuid, confirmed_value } = req.body;
 
@@ -208,6 +174,7 @@ export const Confirm = async (req: Request, res: Response) => {
     }
 }
 
+// Listagem de Measures
 export const List = async (req: Request, res: Response) => {
     let costumer_code = req.params.costumer_code;
     let measure_type = req.query.measure_type;
@@ -228,34 +195,24 @@ export const List = async (req: Request, res: Response) => {
             error_description: "Nenhuma leitura encontrada"
         })
     }
-
-    switch (measure_type) {
-        case 'GAS':
-            return res.status(200).json({
-                costumer_code: costumer_code,
-                measures: measures_filter_type
-            })
-    
-        case 'WATER':
-            return res.status(200).json({
-                costumer_code: costumer_code,
-                measures: measures_filter_type
-            })
-        default:
-            break;
-    }
-    
-    if(measure_type?.toString() != 'WATER' || measure_type.toString() != 'GAS'){
-        return res.status(400).json({
-            error_code: "INVALID_TYPE",
-            error_description: 'Tipo de medição não permitida',
-            measure_code: measures_filter_code
-        })
-    }
-    else{
+    if(!measure_type || measure_type === ""){
         return res.status(200).json({
             costumer_code: costumer_code,
             measures: measures_filter_code
+        })
+    }
+    if(measure_type === "WATER" || measure_type ==="GAS"){
+        return res.status(200).json({
+            costumer_code: costumer_code,
+            measures: measures_filter_type,
+            test:measure_type
+        })
+    }
+    else{
+        return res.status(400).json({
+            error_code: "INVALID_TYPE",
+            error_description: 'Tipo de medição não permitida',
+            test: measure_type
         })
     }
 }
