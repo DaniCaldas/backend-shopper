@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import e, { Response, Request, response } from "express";
+import { Response, Request } from "express";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleAIFileManager } from "@google/generative-ai/server";
 import fs from 'fs';
@@ -11,17 +11,24 @@ const prisma = new PrismaClient();
 const genAI = new GoogleGenerativeAI(key);
 const fileManager = new GoogleAIFileManager(key);
 
+type Measures = {
+    measure_uuid: string;
+    measure_datetime: Date;
+    measure_type: string;
+    has_confirmed: boolean;
+    image_url: string;
+    costumer_id: string;
+};
+
 // Criação do Costumer
 export const CreateCostumer = async (req: Request, res: Response) => {
-    const { costumer_code } = req.body;
-
-    let newCostumer  = prisma.costumer.create({data:{}})
-    .then((response) => {
-        return res.status(201).send(response);
-    })
-    .catch((error) => {
+    try {
+        const newCostumer = await prisma.costumer.create({data:{}})
+        return res.status(201).send(newCostumer);
+        
+    } catch (error) {
         return res.status(500).send(error)
-    })
+    }
 }
 
 // UPLOAD DE IMAGENS
@@ -50,7 +57,7 @@ export const Upload  = async (req: Request, res: Response) => {
         }
     );
 
-    const measures_in_mouth = all_measures.filter(measure => {
+    const measures_in_mouth = all_measures.filter((measure: Measures) => {
         const datemeasure = new Date(measure.measure_datetime);
         return datemeasure.getMonth() + 1 === mouth && measure.costumer_id === costumer_code;
     })
@@ -94,24 +101,24 @@ export const Upload  = async (req: Request, res: Response) => {
         ])
         console.log(file)
         const value = result.response.text();
+        try {
+            const newMeasure = await prisma.measures.create({
+                data:{
+                    measure_type: measure_type,
+                    image_url: `src/img/imagem${uuid()}.png`,
+                    costumer_id: costumer_code
+                }
+            })
         
-        const newMeasure = await prisma.measures.create({
-            data:{
-                measure_type: measure_type,
-                image_url: `src/img/imagem${uuid()}.png`,
-                costumer_id: costumer_code
-            }
-        })
-        .then((response) => {
             return res.status(201).send({
                 measure_url: file,
                 measure_value: value,
-                measure_uuid: response.measure_uuid
-            })
-        })
-        .catch((error) => {
+                measure_uuid: newMeasure.measure_uuid
+            })  
+        } catch (error) {
             return res.status(500).send(error)
-        })
+        }
+        
     }
 }
 
@@ -155,7 +162,7 @@ export const Confirm = async (req: Request, res: Response) => {
         })
     }
     else{
-        const update_measure = await prisma.measures.update({
+        await prisma.measures.update({
             data:{
                 has_confirmed: true
             },
@@ -168,7 +175,7 @@ export const Confirm = async (req: Request, res: Response) => {
                 success: true
             });
         })
-        .catch((error) => {
+        .catch((error: Error) => {
             return res.status(500).send(error);
         })
     }
@@ -181,11 +188,11 @@ export const List = async (req: Request, res: Response) => {
 
     const measures_list = await prisma.measures.findMany();
 
-    const measures_filter_code = measures_list.filter(measures => {
+    const measures_filter_code = measures_list.filter((measures: Measures) => {
         return measures.costumer_id === costumer_code;
     })
 
-    const measures_filter_type = measures_list.filter(measures => {
+    const measures_filter_type = measures_list.filter((measures: Measures) => {
         return measures.measure_type === measure_type && measures.costumer_id === costumer_code;
     })
 
