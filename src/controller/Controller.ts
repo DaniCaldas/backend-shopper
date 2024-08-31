@@ -6,10 +6,9 @@ import fs from 'fs';
 import path from "path";
 import {v4 as uuid} from "uuid"
 
-const key = "AIzaSyAneHIkZky1TyzQIy4kTPbfZSn0m_1AEPI";
 const prisma = new PrismaClient();
-const genAI = new GoogleGenerativeAI(key);
-const fileManager = new GoogleAIFileManager(key);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_URL);
+const fileManager = new GoogleAIFileManager(process.env.GEMINI_API_KEY);
 
 type Measures = {
     measure_uuid: string;
